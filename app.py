@@ -1,12 +1,14 @@
 import azure.cosmos.cosmos_client as cosmos_client
 import azure.cosmos.exceptions as exceptions
-import datetime, uuid, json, logging, os, sys, flask
+import datetime, uuid, json, logging, sys, flask,time
 
 from azure.cosmos.partition_key import PartitionKey
 from flask import request
 from configparser import ConfigParser
 from os.path import exists
 from logging.handlers import RotatingFileHandler
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 
 app = flask.Flask(__name__)
 
@@ -74,12 +76,29 @@ actionLog = []
 
 # Check if the sensor list file exists and load it. Otherwise notify of problem and exit
 
-if exists('sensorList.json'):
-    with open('sensorList.json') as f:
-        sensorList = json.load(f)
-else:
-    open('sensorList.json','x').close()
-    root.error('No sensor list file present, created empty file to prevent execution failure, restart the script once the sensor list has been created.')
+def checkIfSensorListExists():
+    if exists('sensorList.json'):
+        with open('sensorList.json') as f:
+            sensorList = json.load(f)
+    else:
+        open('sensorList.json','x').close()
+        root.error('No sensor list file present, created empty file to prevent execution failure, restart the script once the sensor list has been created.')
+
+class newSensorHandler(FileSystemEventHandler):
+    def on_modified(self,event):
+        checkIfSensorListExists()
+
+def observeSensorList():
+    event_handler = newSensorHandler()
+    observer = Observer()
+    observer.schedule(event_handler, path="sensorList.json", recursive=False)
+    observer.start()
+    try:
+        while True:
+            time.sleep(60)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
 
 
 # Default route
