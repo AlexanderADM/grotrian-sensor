@@ -38,22 +38,22 @@ function run () {
 		echo "Python app not found, running update/install function."
 		UOI
 		echo "Finished installing the script."
-		tmux new -d -s $session 'python3 app.py'
+		screen -dmS $session python3 app.py
 		echo "Script is now running in session \'sensorInput\'"
 	elif git status --branch --porcelain -uno | grep behind; then
 		echo "Differences from main branch found, updating script."
 		echo "Terminating python script session."
-		tmux kill-session -t $session
+		screen -XS $session quit
 		UOI
 		echo "Finished updating the script."
-		tmux new -d -s $session 'python3 app.py'
+		screen -dmS $session python3 app.py
 		echo "Script is now running in session \'sensorInput\'."
 	else
 		echo "No differences found, no action taken."
-		tmux has-session -t $session 2>/dev/null
+		screen -list 2>/dev/null | grep -q $session
 		if [ $? != 0 ]; then
 			echo "The script is not running, rebooting the script."
-  			tmux new -d -s $session 'python3 app.py'
+  			screen -dmS $session python3 app.py
 			echo "Script is now running in session \'sensorInput\'."
 		fi
 	fi
