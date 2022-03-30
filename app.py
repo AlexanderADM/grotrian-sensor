@@ -339,7 +339,7 @@ def saveToBackLog(sensor, containerID):
     sensor.update({'containerID': containerID})
 
     with open('no_connection_backlog.json', 'r+', encoding='utf-8') as backlog:
-        if((os.stat(backlog).st_size == 0)):
+        if((os.stat(os.path.realpath(backlog.name)).st_size == 0)):
             file_data = {"sensors": []}
         else:
             file_data = json.load(backlog)
@@ -366,7 +366,7 @@ def is_connected():
 def processBackLog():
     try:
         with open('no_connection_backlog.json', 'r+', encoding='utf-8') as backlog:
-            if((os.stat(backlog).st_size == 0)):
+            if((os.stat(os.path.realpath(backlog.name)).st_size == 0)):
                 file_data = {"sensors": []}
             else:
                 file_data = json.load(backlog)
