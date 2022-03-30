@@ -7,7 +7,6 @@ import logging
 import socket
 import sys
 import flask
-import asyncio
 import threading
 import os
 
@@ -18,6 +17,7 @@ from os.path import exists
 from logging.handlers import RotatingFileHandler
 
 app = flask.Flask(__name__)
+app.config['JSON_AS_ASCII'] = False
 
 config = ConfigParser()
 
@@ -31,7 +31,7 @@ if not exists('config.ini'):
         "source_id": input("Enter source unique identifier: "),
         "source_name": input("Enter source name: "),
     }
-    with open('config.ini', 'w') as conf:
+    with open('config.ini', 'w', encoding='utf-8') as conf:
         config.write(conf)
         exit()
 else:
@@ -86,20 +86,20 @@ actionLog = []
 
 try:
     if exists('sensorList.json'):
-        with open('sensorList.json') as f:
+        with open('sensorList.json', encoding='utf-8') as f:
             sensorList = json.load(f)
     else:
-        open('sensorList.json', 'x').close()
+        open('sensorList.json', 'x', encoding='utf-8').close()
         root.error('No sensor list file present, created empty file to prevent execution failure, restart the script once the sensor list has been created.')
 except ValueError as e:
     root.error('[LOADING SENSOR LIST]\t:{0}\tError reading sensor list file\n\t\t{1}'.format(datetime.datetime.now().strftime("%m/%d/%Y %H:%M:%S"),e))
     sys.exit()
 
-HAS_CONNECTION = True
-WAS_OFFLINE = False
+HAS_CONNECTION = True;
+WAS_OFFLINE = False;
 
 if not exists('no_connection_backlog.json'):
-    open('no_connection_backlog.json', 'x').close()
+    open('no_connection_backlog.json', 'x', encoding='utf-8').close()
     root.error(
         'No no_connection_backlog list file present, created empty file to prevent execution failure.')
 
@@ -115,6 +115,8 @@ def home():
 # Siemens PLC error and timed values endpoint
 @app.route('/S7/in/error', methods=['POST'])
 def postSensorErrorData():
+    global WAS_OFFLINE
+    global HAS_CONNECTION
 
     # Instantiate locally used variables
     data = request.get_json()
@@ -207,6 +209,9 @@ def postSensorErrorData():
 
 @app.route('/S7/in/sensor', methods=['POST'])
 def postSensorData():
+
+    global WAS_OFFLINE;
+    global HAS_CONNECTION;
 
     # Instantiate locally used variables
 
@@ -333,7 +338,7 @@ def getCosmosClient():
 def saveToBackLog(sensor, containerID):
     sensor.update({'containerID': containerID})
 
-    with open('no_connection_backlog.json', 'r+') as backlog:
+    with open('no_connection_backlog.json', 'r+', encoding='utf-8') as backlog:
         if((os.stat(backlog).st_size == 0)):
             file_data = {"sensors": []}
         else:
@@ -345,6 +350,8 @@ def saveToBackLog(sensor, containerID):
 
 
 def is_connected():
+    global WAS_OFFLINE;
+    global HAS_CONNECTION;
     try:
         host = socket.gethostbyname("1.1.1.1")
         s = socket.create_connection((host, 80), 2)
@@ -358,7 +365,7 @@ def is_connected():
 
 def processBackLog():
     try:
-        with open('no_connection_backlog.json', 'r+') as backlog:
+        with open('no_connection_backlog.json', 'r+', encoding='utf-8') as backlog:
             if((os.stat(backlog).st_size == 0)):
                 file_data = {"sensors": []}
             else:
@@ -372,7 +379,7 @@ def processBackLog():
         print("Unexpected error occured, failed to process the backlog.")
         pass
     finally:
-        with open('no_connection_backlog.json', 'w') as backlog:
+        with open('no_connection_backlog.json', 'w', encoding='utf-8') as backlog:
             pass
 
 
